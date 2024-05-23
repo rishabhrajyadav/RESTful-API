@@ -1,3 +1,4 @@
+require('dotenv').config()
 const express = require("express");
 const bcrypt = require("bcryptjs");
 const path = require("path");
@@ -5,7 +6,6 @@ const hbs = require("hbs")
 
 require("./db/conn")
 const Employee = require("./models/registers");
-const { register } = require("module");
 
 const app = express()
 const PORT = process.env.PORT || 8000;
