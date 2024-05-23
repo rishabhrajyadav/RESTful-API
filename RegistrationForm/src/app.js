@@ -1,11 +1,14 @@
 require('dotenv').config()
 const express = require("express");
 const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const cookieParsser = require("cookie-parser");
 const path = require("path");
 const hbs = require("hbs")
 
 require("./db/conn")
 const Employee = require("./models/registers");
+const auth = require("./middleware/auth")
 
 const app = express()
 const PORT = process.env.PORT || 8000;
@@ -16,6 +19,7 @@ const partialsPath = path.join(__dirname , "../templates/partials")
 
 app.use(express.json())
 app.use(express.urlencoded({extended : false}))
+app.use(cookieParsser());
 
 app.use(express.static(staticPath))
 app.set("view engine" , "hbs");
@@ -24,6 +28,25 @@ hbs.registerPartials(partialsPath)
 
 app.get("/" , (req,res) => {
     res.render("index")
+})
+app.get("/secret" , auth , (req,res) => {
+    console.log(`this is the JWt : ${req.cookies.jwt}`);
+    res.render("secret")
+})
+
+app.get("/logout" , auth , async(req,res) =>{
+    try {
+        console.log(req.user);
+        /* req.user.tokens = req.user.tokens.filter((currElem) => {
+            return currElem.token !== req.token;
+        }) */
+        req.user.tokens = []
+        res.clearCookie("jwt");
+        await req.user.save();
+        res.render("login");
+    } catch (error) {
+        res.status(500).send(error)
+    }
 })
 
 app.get("/register" , (req,res) => {
@@ -49,8 +72,15 @@ app.post("/register" , async(req,res) => {
             password  : password ,
             confirmpassword  : cpassword ,
          })
+         
+         //token generation
+        const token = await registerEmployee.generateAuthToken()
 
-         const token = await registerEmployee.generateAuthToken()
+        res.cookie("jwt" , token , {
+            expires: new Date(Date.now() + 60000),
+            httpOnly: true
+        })
+        console.log(cookie);
 
          const register = await registerEmployee.save();
          res.status(201).render("index");
@@ -73,6 +103,12 @@ app.post("/login" , async(req,res) => {
 
         const token = await userEmail.generateAuthToken()
         console.log("the token part" + token);
+
+        res.cookie("jwt" , token , {
+            expires: new Date(Date.now() + 30000),
+            httpOnly: true,
+            //secure : true
+        })
 
         if(isPassCorrect){
             res.status(201).render("index");
