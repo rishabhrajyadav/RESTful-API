@@ -50,6 +50,8 @@ app.post("/register" , async(req,res) => {
             confirmpassword  : cpassword ,
          })
 
+         const token = await registerEmployee.generateAuthToken()
+
          const register = await registerEmployee.save();
          res.status(201).render("index");
        }else{
@@ -69,17 +71,32 @@ app.post("/login" , async(req,res) => {
         const userEmail = await Employee.findOne({email : email})
         const isPassCorrect = await bcrypt.compare(password , userEmail.password);
 
+        const token = await userEmail.generateAuthToken()
+        console.log("the token part" + token);
+
         if(isPassCorrect){
             res.status(201).render("index");
         } else{
-            res.send("Invalid login details")
+            res.send("Invalid login details : Password")
         }
-        
+
     } catch (error) {
         res.status(400).send("Invalid login details")
     }
 })
 
+
+/* const jwt = require("jsonwebtoken");
+
+const createToken = async() =>{
+    const token = await jwt.sign({_id: "211321434423"} , "secretkey",expiresIn )
+    console.log(token);
+
+    const userVer = await jwt.verify(token,"secretkey")
+    console.log(userVer);
+} */
+
+//createToken();
 
 
 app.listen(PORT , ()=> {
